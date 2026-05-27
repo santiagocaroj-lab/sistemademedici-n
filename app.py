@@ -189,7 +189,6 @@ with st.sidebar:
     else:
         st.info("Sube datos válidos en la pestaña 3 para alimentar el termómetro.")
 
-# --- MODIFICADO: AHORA SON 4 PESTAÑAS (3 y 5 se unen en una) ---
 tab1, tab2, tab3, tab4 = st.tabs([
     "🎯 1. Objetivo", 
     "📈 2. Variables", 
@@ -200,7 +199,7 @@ tab1, tab2, tab3, tab4 = st.tabs([
 with tab1: st.info("**Misión:** Evaluar si la estrategia logró impacto real en el pensamiento crítico juvenil.")
 with tab2: st.table(pd.DataFrame({"Variable": ["Alcance", "Interacción", "Comprensión", "Fake News"], "Columna esperada": ["alcance_impresiones", "interacciones", "comprension_mensaje_pct", "detecta_fake_news"]}))
 
-# --- PESTAÑA UNIFICADA CON INSTRUCCIONES AMIGABLES ---
+# --- PESTAÑA UNIFICADA CON INSTRUCCIONES AMIGABLES Y VALIDACIÓN INTELIGENTE ---
 with tab3:
     st.markdown("### 📥 Incorporación de información")
     
@@ -221,26 +220,32 @@ with tab3:
         st.write("Sube los resultados de comprensión y percepción de la gente.")
         st.download_button("📄 Descargar Plantilla de Encuestas", data=generar_plantilla_csv(), file_name="plantilla_encuestas.csv", mime="text/csv")
         
-        archivo_encuesta = st.file_uploader("📂 Arrastra tu archivo de Encuestas aquí (Excel o CSV)", type=["csv", "xlsx"], key="encuestas")
+        # AHORA ACEPTA WORD Y PDF PARA PODER RECHAZARLOS DE FORMA INTELIGENTE
+        archivo_encuesta = st.file_uploader("📂 Arrastra tu archivo de Encuestas aquí", type=["csv", "xlsx", "pdf", "doc", "docx"], key="encuestas")
         
         if archivo_encuesta is not None:
-            try:
-                df_temporal = pd.read_csv(archivo_encuesta) if archivo_encuesta.name.endswith('.csv') else pd.read_excel(archivo_encuesta)
-                
-                columnas_requeridas = ["alcance_impresiones", "interacciones", "comprension_mensaje_pct", "detecta_fake_news"]
-                columnas_faltantes = [col for col in columnas_requeridas if col not in df_temporal.columns]
-                
-                if not columnas_faltantes:
-                    st.session_state.df_datos = df_temporal
-                    st.session_state.analisis_completado = False
-                    st.success(f"✅ ¡Perfecto! Encuestas validadas exitosamente ({len(st.session_state.df_datos)} registros).")
-                else:
-                    st.session_state.df_datos = None
-                    st.error(f"❌ Uy, parece que al archivo le faltan estas columnas: {', '.join(columnas_faltantes)}. Revisa la plantilla de ejemplo.")
-                    
-            except Exception as e: 
+            # Escudo protector contra PDFs y Words
+            if archivo_encuesta.name.endswith(('.pdf', '.doc', '.docx')):
                 st.session_state.df_datos = None
-                st.error("❌ JARVIS no pudo leer el archivo. Asegúrate de que guardaste el archivo como Excel o CSV.")
+                st.error("❌ Formato incorrecto. JARVIS no puede analizar datos dentro de documentos de texto o PDFs. Por favor, descarga la plantilla, llénala y súbela en formato Excel o CSV.")
+            else:
+                try:
+                    df_temporal = pd.read_csv(archivo_encuesta) if archivo_encuesta.name.endswith('.csv') else pd.read_excel(archivo_encuesta)
+                    
+                    columnas_requeridas = ["alcance_impresiones", "interacciones", "comprension_mensaje_pct", "detecta_fake_news"]
+                    columnas_faltantes = [col for col in columnas_requeridas if col not in df_temporal.columns]
+                    
+                    if not columnas_faltantes:
+                        st.session_state.df_datos = df_temporal
+                        st.session_state.analisis_completado = False
+                        st.success(f"✅ ¡Perfecto! Encuestas validadas exitosamente ({len(st.session_state.df_datos)} registros).")
+                    else:
+                        st.session_state.df_datos = None
+                        st.error(f"❌ Uy, parece que al archivo le faltan estas columnas: {', '.join(columnas_faltantes)}. Revisa la plantilla de ejemplo.")
+                        
+                except Exception as e: 
+                    st.session_state.df_datos = None
+                    st.error("❌ JARVIS no pudo leer el archivo. Asegúrate de que no esté dañado y sea Excel o CSV.")
 
     # Lado Derecho: Redes Sociales
     with col_der:
@@ -248,15 +253,21 @@ with tab3:
         st.write("Sube el rendimiento de tus publicaciones (Likes, alcance, etc.).")
         st.download_button("📲 Descargar Plantilla de Redes", data=generar_plantilla_rrss(), file_name="plantilla_rrss.csv", mime="text/csv")
         
-        archivo_rrss = st.file_uploader("📂 Arrastra tu archivo de Redes aquí (Excel o CSV)", type=["csv", "xlsx"], key="rrss")
+        # AHORA ACEPTA WORD Y PDF PARA PODER RECHAZARLOS DE FORMA INTELIGENTE
+        archivo_rrss = st.file_uploader("📂 Arrastra tu archivo de Redes aquí", type=["csv", "xlsx", "pdf", "doc", "docx"], key="rrss")
         
         if archivo_rrss is not None:
-            try:
-                df_rs = pd.read_csv(archivo_rrss) if archivo_rrss.name.endswith('.csv') else pd.read_excel(archivo_rrss)
-                st.session_state.df_rrss = df_rs
-                st.success(f"✅ ¡Perfecto! Datos de Redes cargados exitosamente ({len(df_rs)} publicaciones).")
-            except Exception as e:
-                st.error("❌ JARVIS no pudo leer el archivo de Redes. Asegúrate de guardarlo como Excel o CSV.")
+            # Escudo protector contra PDFs y Words
+            if archivo_rrss.name.endswith(('.pdf', '.doc', '.docx')):
+                st.session_state.df_rrss = None
+                st.error("❌ Formato incorrecto. JARVIS necesita tablas de datos. No puede leer PDFs ni archivos Word. Por favor usa la plantilla de Excel o CSV de arriba.")
+            else:
+                try:
+                    df_rs = pd.read_csv(archivo_rrss) if archivo_rrss.name.endswith('.csv') else pd.read_excel(archivo_rrss)
+                    st.session_state.df_rrss = df_rs
+                    st.success(f"✅ ¡Perfecto! Datos de Redes cargados exitosamente ({len(df_rs)} publicaciones).")
+                except Exception as e:
+                    st.error("❌ JARVIS no pudo leer el archivo de Redes. Asegúrate de guardarlo como Excel o CSV.")
 
 # --- PESTAÑA CENTRALIZADA DE PROCESAMIENTO Y RESULTADOS ---
 with tab4:
