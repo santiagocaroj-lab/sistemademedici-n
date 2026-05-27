@@ -4,8 +4,6 @@ import time
 import tempfile
 import os
 from fpdf import FPDF
-import PyPDF2
-import docx
 
 # ==========================================
 # 1. CONFIGURACIÓN VISUAL Y VARIABLES GLOBALES
@@ -13,11 +11,14 @@ import docx
 st.set_page_config(page_title="JARVIS - Medidor de Eficiencias", layout="wide", initial_sidebar_state="expanded")
 
 # Inicializar variables de estado
-if "df_datos" not in st.session_state: st.session_state.df_datos = None
-if "df_rrss" not in st.session_state: st.session_state.df_rrss = None
-if "doc_procesado" not in st.session_state: st.session_state.doc_procesado = None
-if "analisis_completado" not in st.session_state: st.session_state.analisis_completado = False
-if "mostrar_guia" not in st.session_state: st.session_state.mostrar_guia = False
+if "df_datos" not in st.session_state:
+    st.session_state.df_datos = None
+if "df_rrss" not in st.session_state:
+    st.session_state.df_rrss = None
+if "analisis_completado" not in st.session_state:
+    st.session_state.analisis_completado = False
+if "mostrar_guia" not in st.session_state:
+    st.session_state.mostrar_guia = False
 
 st.markdown("""
     <style>
@@ -36,7 +37,7 @@ st.markdown("""
     }
     .status-log {
         background-color: #1e293b; color: #10b981; font-family: 'Courier New';
-        padding: 15px; border-radius: 5px; height: 200px; overflow-y: auto;
+        padding: 15px; border-radius: 5px; height: 250px; overflow-y: auto;
     }
     .guide-container {
         background-color: #ffffff; padding: 30px; border-radius: 10px;
@@ -52,19 +53,26 @@ if st.session_state.mostrar_guia:
     st.markdown("<div class='guide-container'>", unsafe_allow_html=True)
     st.markdown("<h1 style='color: #0f172a;'>📖 ¿Qué hacemos? - Manual del Sistema JARVIS</h1>", unsafe_allow_html=True)
     st.write("Bienvenido al centro de conocimiento del **Medidor de Eficiencias**. Aquí explicamos cómo operamos.")
+    
     st.markdown("### 🎯 Objetivos")
-    st.info("Medir la efectividad real de las estrategias de comunicación pública, trascendiendo las métricas de vanidad (likes) para entender si realmente hubo una apropiación del mensaje, fomento del pensamiento crítico y fortalecimiento democrático.")
+    st.info("El objetivo principal del sistema es medir la efectividad real de las estrategias de comunicación pública, trascendiendo las métricas de vanidad (likes) para entender si realmente hubo una apropiación del mensaje, fomento del pensamiento crítico y fortalecimiento democrático.")
+    
     st.markdown("### 🧩 Metodología")
-    st.write("Enfoque **Mixto**:")
-    st.markdown("- **Cuantitativo:** Análisis algorítmico de visualizaciones, alcance e interacciones (Redes Sociales y Encuestas).\n- **Cualitativo:** Lectura asistida de documentos (PDF/Word) para rastrear percepciones ciudadanas y comprensión de mensajes.")
+    st.write("Utilizamos un enfoque **Mixto**:")
+    st.markdown("- **Cuantitativo:** Análisis algorítmico de visualizaciones, alcance, interacciones y tasas de conversión mediante ingesta de bases de datos.\n- **Cualitativo:** Medición de comprensión de mensajes, capacidad de detectar desinformación (Fake News) y cambios en la percepción pública a través de encuestas estructuradas.")
+    
     st.markdown("### 📉 Variables y Categorías de Medición")
     colA, colB = st.columns(2)
     with colA:
-        st.write("**1. Impacto Táctico (RRSS):** Alcance, visualizaciones, comentarios.")
-        st.write("**2. Comprensión:** Porcentaje de acierto en encuestas.")
+        st.write("**1. Impacto Táctico (RRSS):** Alcance, visualizaciones, comentarios, compartidos.")
+        st.write("**2. Comprensión:** Porcentaje de acierto en el mensaje central de la campaña.")
     with colB:
-        st.write("**3. Pensamiento Crítico:** Usuarios que verifican fuentes (Lectura de documentos).")
-        st.write("**4. Defensa Democrática:** Capacidad de detectar Fake News.")
+        st.write("**3. Pensamiento Crítico:** Tasa de usuarios que verifican las fuentes.")
+        st.write("**4. Defensa Democrática:** Capacidad del público para detectar Fake News.")
+        
+    st.markdown("### ⚙️ Análisis de Resultados")
+    st.write("El motor JARVIS cruza los datos de alcance digital con los resultados cualitativos de las encuestas para determinar si una campaña fue simplemente 'viral' o si fue verdaderamente **'eficiente y transformadora'**.")
+    
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("⬅️ Volver al Medidor de Eficiencias", type="primary"):
         st.session_state.mostrar_guia = False
@@ -73,61 +81,91 @@ if st.session_state.mostrar_guia:
     st.stop()
 
 # ==========================================
-# 3. FUNCIONES DE LECTURA Y PROCESAMIENTO
+# 3. FUNCIONES DE REDUNDANCIA, CÁLCULO Y PDF
 # ==========================================
 def generar_plantilla_csv():
-    return pd.DataFrame({"id_encuestado": [1, 2], "alcance_impresiones": [1500, 200], "interacciones": [150, 20], "comprension_mensaje_pct": [80, 95], "verifica_fuentes": ["Si", "No"], "detecta_fake_news": ["Si", "No"]}).to_csv(index=False).encode('utf-8')
+    df_template = pd.DataFrame({
+        "id_encuestado": [1, 2, 3, 4, 5],
+        "alcance_impresiones": [1500, 200, 3400, 150, 800],
+        "interacciones": [150, 20, 400, 5, 80],
+        "comprension_mensaje_pct": [80, 95, 40, 100, 60],
+        "verifica_fuentes": ["Si", "Si", "No", "Si", "No"],
+        "detecta_fake_news": ["Si", "No", "No", "Si", "Si"]
+    })
+    return df_template.to_csv(index=False).encode('utf-8')
 
 def generar_plantilla_rrss():
-    return pd.DataFrame({"fecha": ["2026-05-01", "2026-05-02"], "plataforma": ["Instagram", "Facebook"], "alcance": [1500, 2000], "likes": [150, 80], "comentarios": [20, 5]}).to_csv(index=False).encode('utf-8')
-
-def extraer_texto_pdf(archivo):
-    texto = ""
-    pdf_reader = PyPDF2.PdfReader(archivo)
-    for page in pdf_reader.pages:
-        texto += page.extract_text() + "\n"
-    return texto
-
-def extraer_texto_docx(archivo):
-    doc = docx.Document(archivo)
-    return "\n".join([para.text for para in doc.paragraphs])
+    df_template = pd.DataFrame({
+        "fecha": ["2026-05-01", "2026-05-02", "2026-05-03", "2026-05-04"],
+        "plataforma": ["Instagram", "Facebook", "TikTok", "Instagram"],
+        "post_id": ["Post_001", "Post_002", "Post_003", "Post_004"],
+        "alcance": [1500, 2000, 8500, 3200],
+        "likes": [150, 80, 1200, 400],
+        "comentarios": [20, 5, 150, 45],
+        "compartidos": [10, 2, 400, 80]
+    })
+    return df_template.to_csv(index=False).encode('utf-8')
 
 def calcular_metricas(df):
     metricas = {"alcance_total": 0, "tasa_interaccion": 0.0, "promedio_comprension": 0.0, "nivel_fake_news": "Desconocido"}
     try:
         if 'alcance_impresiones' in df.columns: metricas["alcance_total"] = int(df['alcance_impresiones'].sum())
-        if 'interacciones' in df.columns and metricas["alcance_total"] > 0:
+        if 'interacciones' in df.columns and 'alcance_impresiones' in df.columns and metricas["alcance_total"] > 0:
             metricas["tasa_interaccion"] = round((int(df['interacciones'].sum()) / metricas["alcance_total"]) * 100, 2)
         if 'comprension_mensaje_pct' in df.columns:
             df['comprension_mensaje_pct'] = pd.to_numeric(df['comprension_mensaje_pct'], errors='coerce')
             metricas["promedio_comprension"] = round(df['comprension_mensaje_pct'].mean(), 2)
         if 'detecta_fake_news' in df.columns:
-            pct = (df['detecta_fake_news'].astype(str).str.lower().str.strip() == 'si').mean() * 100
-            metricas["nivel_fake_news"] = "Alto 🟢" if pct >= 70 else ("Medio 🟡" if pct >= 40 else "Bajo 🔴")
-    except: pass
+            porcentaje = (df['detecta_fake_news'].astype(str).str.lower().str.strip() == 'si').mean() * 100
+            if porcentaje >= 70: metricas["nivel_fake_news"] = "Alto 🟢"
+            elif porcentaje >= 40: metricas["nivel_fake_news"] = "Medio 🟡"
+            else: metricas["nivel_fake_news"] = "Bajo 🔴"
+    except Exception as e: st.sidebar.error(f"Error: {e}")
     return metricas
 
 def generar_pdf_rrss(df):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", 'B', 16)
-    pdf.cell(0, 10, "JARVIS - REPORTE DE REDES SOCIALES", ln=True, align='C')
+    pdf.cell(0, 10, "JARVIS - REPORTE DE EFICIENCIA EN REDES SOCIALES", ln=True, align='C')
     pdf.ln(10)
+    
     pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 10, "1. Resumen Global", ln=True)
+    pdf.cell(0, 10, "1. Resumen Global de Impacto", ln=True)
     pdf.set_font("Arial", '', 12)
     
     alcance_tot = int(df['alcance'].sum()) if 'alcance' in df.columns else 0
     likes_tot = int(df['likes'].sum()) if 'likes' in df.columns else 0
+    coment_tot = int(df['comentarios'].sum()) if 'comentarios' in df.columns else 0
+    comp_tot = int(df['compartidos'].sum()) if 'compartidos' in df.columns else 0
     
-    pdf.cell(0, 8, f"- Alcance Total: {alcance_tot:,}", ln=True)
+    pdf.cell(0, 8, f"- Alcance Total (Visualizaciones): {alcance_tot:,}", ln=True)
     pdf.cell(0, 8, f"- Total Likes: {likes_tot:,}", ln=True)
+    pdf.cell(0, 8, f"- Total Comentarios: {coment_tot:,}", ln=True)
+    pdf.cell(0, 8, f"- Total Compartidos: {comp_tot:,}", ln=True)
+    
+    pdf.ln(10)
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(0, 10, "2. Rendimiento por Plataforma", ln=True)
+    pdf.set_font("Arial", '', 12)
+    
+    if 'plataforma' in df.columns and 'alcance' in df.columns:
+        resumen_plat = df.groupby('plataforma')['alcance'].sum().reset_index()
+        for _, row in resumen_plat.iterrows():
+            pdf.cell(0, 8, f"- {row['plataforma']}: {int(row['alcance']):,} de alcance", ln=True)
+    else:
+        pdf.cell(0, 8, "No se detecto la columna 'plataforma' para agrupar.", ln=True)
+        
+    pdf.ln(20)
+    pdf.set_font("Arial", 'I', 10)
+    pdf.cell(0, 10, "Generado automaticamente por el Motor JARVIS - Medidor de Eficiencias.", ln=True)
     
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
         pdf.output(tmp.name)
-        with open(tmp.name, "rb") as f: bytes_pdf = f.read()
+        with open(tmp.name, "rb") as f:
+            pdf_bytes = f.read()
     os.remove(tmp.name)
-    return bytes_pdf
+    return pdf_bytes
 
 # ==========================================
 # 4. INTERFAZ PRINCIPAL
@@ -143,121 +181,121 @@ with st.sidebar:
     st.markdown("## 📊 Termómetro General")
     if st.session_state.df_datos is not None and st.session_state.analisis_completado:
         metricas_reales = calcular_metricas(st.session_state.df_datos)
-        st.markdown(f"<div class='metric-box'><b>Alcance Digital</b><br><span style='font-size:24px; color:#3b82f6;'>{metricas_reales['alcance_total']:,}</span></div><br>", unsafe_allow_html=True)
+        st.markdown(f"<div class='metric-box'><b>Alcance Digital Medido</b><br><span style='font-size:24px; color:#3b82f6;'>{metricas_reales['alcance_total']:,}</span></div><br>", unsafe_allow_html=True)
         col_a, col_b = st.columns(2)
         with col_a: st.markdown(f"<div class='metric-box'><b>✅ Interacción</b><br><span style='font-size:16px; color:#10b981;'>{metricas_reales['tasa_interaccion']}%</span></div>", unsafe_allow_html=True)
         with col_b: st.markdown(f"<div class='metric-box'><b>🧠 Comprensión</b><br><span style='font-size:16px; color:#8b5cf6;'>{metricas_reales['promedio_comprension']}%</span></div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='metric-box' style='margin-top:15px;'><b>🛡️ Fake News:</b> <span style='font-weight:bold;'>{metricas_reales['nivel_fake_news']}</span></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='metric-box' style='margin-top:15px;'><b>🛡️ Detectan Fake News:</b> <span style='font-weight:bold;'>{metricas_reales['nivel_fake_news']}</span></div>", unsafe_allow_html=True)
     else:
-        st.info("Sube datos en la pestaña 3 para alimentar el termómetro.")
+        st.info("Sube datos válidos en la pestaña 3 para alimentar el termómetro.")
 
-tab1, tab2, tab3, tab4 = st.tabs(["🎯 1. Objetivo", "📈 2. Variables", "📥 3. Incorporación de información", "⚙️ 4. Procesamiento"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    "🎯 1. Objetivo", 
+    "📈 2. Variables", 
+    "📥 3. Ingesta de Encuestas", 
+    "⚙️ 4. Procesamiento",
+    "📱 5. Redes Sociales"
+])
 
 with tab1: st.info("**Misión:** Evaluar si la estrategia logró impacto real en el pensamiento crítico juvenil.")
 with tab2: st.table(pd.DataFrame({"Variable": ["Alcance", "Interacción", "Comprensión", "Fake News"], "Columna esperada": ["alcance_impresiones", "interacciones", "comprension_mensaje_pct", "detecta_fake_news"]}))
 
-# --- PESTAÑA 3: INCORPORACIÓN UNIFICADA DE INFORMACIÓN ---
+# --- MODIFICADO: TABS 3 Y 4 ---
+
 with tab3:
-    st.markdown("### 📥 Centro de Ingesta de Información")
-    st.write("Sube aquí cualquier tipo de información: encuestas, métricas de redes sociales o documentos no estructurados (Word/PDF).")
+    st.markdown("### 📥 Ingesta de Datos: Encuestas de Opinión")
+    st.download_button("📄 Plantilla CSV (Encuestas)", data=generar_plantilla_csv(), file_name="plantilla_encuestas.csv", mime="text/csv")
+    archivo_encuesta = st.file_uploader("Cargar resultados de encuestas (CSV/Excel)", type=["csv", "xlsx"], key="encuestas")
     
-    # Sub-pestañas internas para organizar mejor sin abrumar al usuario
-    subtab_encuestas, subtab_rrss, subtab_docs = st.tabs(["📊 Encuestas (Excel/CSV)", "📱 Redes Sociales (Excel/CSV)", "📄 Documentos (PDF/Word)"])
-    
-    with subtab_encuestas:
-        st.markdown("#### 1. Resultados de Encuestas")
-        st.download_button("📄 Bajar Plantilla", data=generar_plantilla_csv(), file_name="plantilla_encuestas.csv", mime="text/csv")
-        archivo_encuesta = st.file_uploader("Sube el Excel o CSV de encuestas:", type=["csv", "xlsx"], key="encuestas")
-        if archivo_encuesta is not None:
-            try:
-                st.session_state.df_datos = pd.read_csv(archivo_encuesta) if archivo_encuesta.name.endswith('.csv') else pd.read_excel(archivo_encuesta)
-                st.success(f"¡Encuestas cargadas con éxito! ({len(st.session_state.df_datos)} registros).")
-            except Exception as e: st.error(f"Error: {e}")
+    if archivo_encuesta is not None:
+        try:
+            df_temporal = pd.read_csv(archivo_encuesta) if archivo_encuesta.name.endswith('.csv') else pd.read_excel(archivo_encuesta)
+            
+            # PARÁMETROS DE VALIDACIÓN: JARVIS ya tiene de dónde agarrarse
+            columnas_requeridas = ["alcance_impresiones", "interacciones", "comprension_mensaje_pct", "detecta_fake_news"]
+            columnas_faltantes = [col for col in columnas_requeridas if col not in df_temporal.columns]
+            
+            if not columnas_faltantes:
+                st.session_state.df_datos = df_temporal
+                st.session_state.analisis_completado = False
+                st.success(f"✅ Archivo estructurado correctamente. ({len(st.session_state.df_datos)} registros validados).")
+            else:
+                st.session_state.df_datos = None
+                st.error(f"❌ Error de Estructura: El archivo no es válido. Faltan las siguientes columnas: {', '.join(columnas_faltantes)}. Descarga la plantilla de ejemplo.")
+                
+        except Exception as e: 
+            st.session_state.df_datos = None
+            st.error(f"❌ Error crítico leyendo archivo: Asegúrate de que no sea un PDF ni un documento corrupto. Detalle técnico: {e}")
 
-    with subtab_rrss:
-        st.markdown("#### 2. Reportes de Redes Sociales")
-        st.download_button("📲 Bajar Plantilla", data=generar_plantilla_rrss(), file_name="plantilla_rrss.csv", mime="text/csv")
-        archivo_rrss = st.file_uploader("Sube el Excel o CSV de Meta/Instagram/TikTok:", type=["csv", "xlsx"], key="rrss")
-        if archivo_rrss is not None:
-            try:
-                st.session_state.df_rrss = pd.read_csv(archivo_rrss) if archivo_rrss.name.endswith('.csv') else pd.read_excel(archivo_rrss)
-                st.success(f"¡Redes Sociales cargadas! ({len(st.session_state.df_rrss)} publicaciones).")
-            except Exception as e: st.error(f"Error: {e}")
-
-    with subtab_docs:
-        st.markdown("#### 3. Lectura Inteligente de Documentos")
-        st.info("Sube informes, notas, o entrevistas en formato PDF o Word. JARVIS extraerá el texto y lo analizará con base en lo que tú le pidas.")
-        archivo_doc = st.file_uploader("Cargar documento (PDF o Word):", type=["pdf", "docx"], key="docs")
-        
-        # Parámetros tipo "Garzón"
-        st.markdown("##### 🧠 Parámetros de Apoyo")
-        parametros = st.text_area("¿Qué debo buscar en este documento? (Ej: 'Encuentra si los jóvenes mencionan la palabra corrupción', 'Resume las críticas a la política'):", placeholder="Escribe tus instrucciones aquí...")
-        
-        if archivo_doc and st.button("Leer e Interpretar Documento", type="primary"):
-            try:
-                with st.spinner("Extrayendo texto del documento..."):
-                    if archivo_doc.name.endswith('.pdf'):
-                        texto_extraido = extraer_texto_pdf(archivo_doc)
-                    else:
-                        texto_extraido = extraer_texto_docx(archivo_doc)
-                    
-                    st.session_state.doc_procesado = {"nombre": archivo_doc.name, "texto": texto_extraido, "parametros": parametros}
-                    
-                st.success("✅ Documento leído correctamente. Ve a la pestaña '4. Procesamiento' para ver el análisis.")
-            except Exception as e:
-                st.error(f"Ocurrió un error al leer el archivo. Intenta con otro documento válido. Detalle: {e}")
-
-# --- PESTAÑA 4: PROCESAMIENTO Y ANÁLISIS ---
 with tab4:
-    st.markdown("### ⚙️ Centro de Análisis y Procesamiento")
+    st.markdown("### ⚙️ Procesamiento de Datos de Opinión")
     
-    # Análisis de Datos Estructurados (Encuestas)
-    if st.session_state.df_datos is not None:
-        if st.button("🚀 INICIAR ANÁLISIS DE ENCUESTAS", type="primary"):
+    st.markdown("#### 🧠 Contexto y Análisis Avanzado")
+    contexto_usuario = st.text_area("Proporciona el contexto de la campaña (Ej: Objetivos no medibles, público objetivo, tono):", placeholder="Escribe aquí el contexto para que JARVIS evalúe los resultados bajo esta lupa...")
+    
+    if st.button("🌐 Iniciar Lectura Guiada (API)"):
+        st.warning("⚠️ Al ser un ejercicio académico, el API para lectura guiada con contexto no se encuentra disponible en esta versión.")
+        
+    st.markdown("---")
+    st.markdown("#### 📊 Cálculo Estándar de Eficiencias")
+    if st.session_state.df_datos is None: 
+        st.warning("⚠️ Sube y valida un archivo correctamente en la Pestaña 3 para proceder.")
+    else:
+        if st.button("🚀 INICIAR CÁLCULO ALGORÍTMICO", type="primary"):
             st.session_state.analisis_completado = True
-            st.success("✅ **Análisis de Encuestas completado. Termómetro General actualizado (Ver izquierda).**")
+            st.success("✅ **Cálculo completado. El Termómetro General (izquierda) ha sido actualizado con datos reales.**")
+
+# --- FIN MODIFICADO ---
+
+with tab5:
+    st.markdown("### 📱 Central de Monitoreo: Redes Sociales")
+    st.write("Sube aquí los reportes extraídos de Meta Business, Instagram Insights o TikTok Analytics.")
     
-    # Análisis de Redes Sociales
+    st.download_button("📲 Descargar Plantilla CSV (Redes Sociales)", data=generar_plantilla_rrss(), file_name="plantilla_rrss.csv", mime="text/csv")
+    
+    archivo_rrss = st.file_uploader("Cargar reporte de Redes Sociales (CSV/Excel)", type=["csv", "xlsx"], key="rrss")
+    
+    if archivo_rrss is not None:
+        try:
+            df_rs = pd.read_csv(archivo_rrss) if archivo_rrss.name.endswith('.csv') else pd.read_excel(archivo_rrss)
+            st.session_state.df_rrss = df_rs
+            st.success(f"✅ Datos de RRSS cargados. ({len(df_rs)} publicaciones encontradas).")
+        except Exception as e:
+            st.error(f"Error procesando redes sociales: {e}")
+            
     if st.session_state.df_rrss is not None:
         st.markdown("---")
-        st.markdown("#### 📊 Rendimiento en Redes Sociales")
+        st.markdown("#### 📊 Gráficas de Rendimiento")
+        
         df_rs = st.session_state.df_rrss
         colA, colB = st.columns(2)
+        
         with colA:
+            st.write("**Alcance por Plataforma**")
             if 'plataforma' in df_rs.columns and 'alcance' in df_rs.columns:
-                st.bar_chart(df_rs.groupby('plataforma')['alcance'].sum())
+                alcance_plat = df_rs.groupby('plataforma')['alcance'].sum()
+                st.bar_chart(alcance_plat)
+            else: st.warning("Faltan columnas 'plataforma' o 'alcance'.")
+            
         with colB:
+            st.write("**Evolución de Interacciones (Likes)**")
             if 'fecha' in df_rs.columns and 'likes' in df_rs.columns:
-                st.line_chart(df_rs.groupby('fecha')['likes'].sum())
-                
-        pdf_bytes = generar_pdf_rrss(df_rs)
-        st.download_button("⬇️ Descargar Reporte PDF de Redes", data=pdf_bytes, file_name="Reporte_RRSS.pdf", mime="application/pdf")
-
-    # Análisis de Documentos con Parámetros (Estilo Garzón)
-    if st.session_state.doc_procesado is not None:
+                likes_fecha = df_rs.groupby('fecha')['likes'].sum()
+                st.line_chart(likes_fecha)
+            else: st.warning("Faltan columnas 'fecha' o 'likes'.")
+            
         st.markdown("---")
-        st.markdown(f"#### 🧠 Análisis Documental: {st.session_state.doc_procesado['nombre']}")
+        st.markdown("#### 📑 Generación de Informe Ejecutivo")
+        st.info("Presiona el botón para empaquetar estos resultados en un documento formal PDF.")
         
-        parametros_usados = st.session_state.doc_procesado['parametros']
-        if not parametros_usados: parametros_usados = "Ninguno especificado. Se realizará un escaneo general."
-        
-        st.write(f"**Parámetros de búsqueda indicados:** _{parametros_usados}_")
-        
-        # Simulación de respuesta IA basada en el texto (Para que funcione 100% sin API Keys por ahora)
-        texto = st.session_state.doc_procesado['texto']
-        palabras_clave = len(texto.split())
-        
-        st.markdown("<div class='status-log'>", unsafe_allow_html=True)
-        st.markdown(f"> Iniciando Copiloto de Lectura...<br>", unsafe_allow_html=True)
-        time.sleep(1)
-        st.markdown(f"> Extrayendo datos... Se detectaron {palabras_clave} palabras en el documento.<br>", unsafe_allow_html=True)
-        time.sleep(1)
-        st.markdown(f"> Cruzando texto con los parámetros: '{parametros_usados}'...<br>", unsafe_allow_html=True)
-        time.sleep(1.5)
-        st.markdown(f"> <b>RESULTADO DEL ANÁLISIS MOCKUP:</b><br>", unsafe_allow_html=True)
-        st.markdown(f"> <i>El documento aborda temas relacionados con la comunicación y participación. Según sus parámetros, se sugiere prestar especial atención a los párrafos centrales donde se nota una leve inclinación hacia la falta de contraste de información (Fake News).</i><br>", unsafe_allow_html=True)
-        st.markdown(f"<br>> ✅ Lectura Finalizada.", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    if (st.session_state.df_datos is None) and (st.session_state.df_rrss is None) and (st.session_state.doc_procesado is None):
-        st.warning("⚠️ No hay información en el sistema. Ve a la Pestaña 3 y sube algunos archivos.")
+        try:
+            pdf_bytes = generar_pdf_rrss(df_rs)
+            st.download_button(
+                label="⬇️ Descargar Reporte PDF de Redes Sociales",
+                data=pdf_bytes,
+                file_name="Reporte_Eficiencias_RRSS_JARVIS.pdf",
+                mime="application/pdf",
+                type="primary"
+            )
+        except Exception as e:
+            st.error(f"Error generando el PDF: Asegúrate de que las columnas coincidan con la plantilla. Detalle: {e}")
