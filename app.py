@@ -189,104 +189,121 @@ with st.sidebar:
     else:
         st.info("Sube datos válidos en la pestaña 3 para alimentar el termómetro.")
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+# --- MODIFICADO: AHORA SON 4 PESTAÑAS (3 y 5 se unen en una) ---
+tab1, tab2, tab3, tab4 = st.tabs([
     "🎯 1. Objetivo", 
     "📈 2. Variables", 
-    "📥 3. Ingesta de Encuestas", 
-    "⚙️ 4. Procesamiento",
-    "📱 5. Redes Sociales"
+    "📥 3. Incorporación de información", 
+    "⚙️ 4. Procesamiento y Resultados"
 ])
 
 with tab1: st.info("**Misión:** Evaluar si la estrategia logró impacto real en el pensamiento crítico juvenil.")
 with tab2: st.table(pd.DataFrame({"Variable": ["Alcance", "Interacción", "Comprensión", "Fake News"], "Columna esperada": ["alcance_impresiones", "interacciones", "comprension_mensaje_pct", "detecta_fake_news"]}))
 
-# --- MODIFICADO: TABS 3 Y 4 ---
-
+# --- PESTAÑA UNIFICADA CON INSTRUCCIONES AMIGABLES ---
 with tab3:
-    st.markdown("### 📥 Ingesta de Datos: Encuestas de Opinión")
-    st.download_button("📄 Plantilla CSV (Encuestas)", data=generar_plantilla_csv(), file_name="plantilla_encuestas.csv", mime="text/csv")
-    archivo_encuesta = st.file_uploader("Cargar resultados de encuestas (CSV/Excel)", type=["csv", "xlsx"], key="encuestas")
+    st.markdown("### 📥 Incorporación de información")
     
-    if archivo_encuesta is not None:
-        try:
-            df_temporal = pd.read_csv(archivo_encuesta) if archivo_encuesta.name.endswith('.csv') else pd.read_excel(archivo_encuesta)
-            
-            # PARÁMETROS DE VALIDACIÓN: JARVIS ya tiene de dónde agarrarse
-            columnas_requeridas = ["alcance_impresiones", "interacciones", "comprension_mensaje_pct", "detecta_fake_news"]
-            columnas_faltantes = [col for col in columnas_requeridas if col not in df_temporal.columns]
-            
-            if not columnas_faltantes:
-                st.session_state.df_datos = df_temporal
-                st.session_state.analisis_completado = False
-                st.success(f"✅ Archivo estructurado correctamente. ({len(st.session_state.df_datos)} registros validados).")
-            else:
-                st.session_state.df_datos = None
-                st.error(f"❌ Error de Estructura: El archivo no es válido. Faltan las siguientes columnas: {', '.join(columnas_faltantes)}. Descarga la plantilla de ejemplo.")
+    st.success("""
+    **¡No te preocupes por los formatos de archivo! Sigue estos 3 simples pasos:**
+    1. Da clic en el botón de **'Descargar Plantilla'** de lo que quieras analizar.
+    2. Abre ese archivo en Excel, borra los datos de ejemplo (¡pero no toques los títulos de arriba!) y pega tus datos.
+    3. Guarda el archivo y arrástralo al recuadro correspondiente aquí abajo. ¡JARVIS hará el resto!
+    """)
+    
+    st.markdown("---")
+    
+    col_izq, col_der = st.columns(2)
+    
+    # Lado Izquierdo: Encuestas
+    with col_izq:
+        st.markdown("#### 🧠 1. Datos de Encuestas (Opinión)")
+        st.write("Sube los resultados de comprensión y percepción de la gente.")
+        st.download_button("📄 Descargar Plantilla de Encuestas", data=generar_plantilla_csv(), file_name="plantilla_encuestas.csv", mime="text/csv")
+        
+        archivo_encuesta = st.file_uploader("📂 Arrastra tu archivo de Encuestas aquí (Excel o CSV)", type=["csv", "xlsx"], key="encuestas")
+        
+        if archivo_encuesta is not None:
+            try:
+                df_temporal = pd.read_csv(archivo_encuesta) if archivo_encuesta.name.endswith('.csv') else pd.read_excel(archivo_encuesta)
                 
-        except Exception as e: 
-            st.session_state.df_datos = None
-            st.error(f"❌ Error crítico leyendo archivo: Asegúrate de que no sea un PDF ni un documento corrupto. Detalle técnico: {e}")
+                columnas_requeridas = ["alcance_impresiones", "interacciones", "comprension_mensaje_pct", "detecta_fake_news"]
+                columnas_faltantes = [col for col in columnas_requeridas if col not in df_temporal.columns]
+                
+                if not columnas_faltantes:
+                    st.session_state.df_datos = df_temporal
+                    st.session_state.analisis_completado = False
+                    st.success(f"✅ ¡Perfecto! Encuestas validadas exitosamente ({len(st.session_state.df_datos)} registros).")
+                else:
+                    st.session_state.df_datos = None
+                    st.error(f"❌ Uy, parece que al archivo le faltan estas columnas: {', '.join(columnas_faltantes)}. Revisa la plantilla de ejemplo.")
+                    
+            except Exception as e: 
+                st.session_state.df_datos = None
+                st.error("❌ JARVIS no pudo leer el archivo. Asegúrate de que guardaste el archivo como Excel o CSV.")
 
+    # Lado Derecho: Redes Sociales
+    with col_der:
+        st.markdown("#### 📱 2. Datos de Redes Sociales (Meta, TikTok)")
+        st.write("Sube el rendimiento de tus publicaciones (Likes, alcance, etc.).")
+        st.download_button("📲 Descargar Plantilla de Redes", data=generar_plantilla_rrss(), file_name="plantilla_rrss.csv", mime="text/csv")
+        
+        archivo_rrss = st.file_uploader("📂 Arrastra tu archivo de Redes aquí (Excel o CSV)", type=["csv", "xlsx"], key="rrss")
+        
+        if archivo_rrss is not None:
+            try:
+                df_rs = pd.read_csv(archivo_rrss) if archivo_rrss.name.endswith('.csv') else pd.read_excel(archivo_rrss)
+                st.session_state.df_rrss = df_rs
+                st.success(f"✅ ¡Perfecto! Datos de Redes cargados exitosamente ({len(df_rs)} publicaciones).")
+            except Exception as e:
+                st.error("❌ JARVIS no pudo leer el archivo de Redes. Asegúrate de guardarlo como Excel o CSV.")
+
+# --- PESTAÑA CENTRALIZADA DE PROCESAMIENTO Y RESULTADOS ---
 with tab4:
-    st.markdown("### ⚙️ Procesamiento de Datos de Opinión")
+    st.markdown("### ⚙️ Procesamiento y Resultados")
     
-    st.markdown("#### 🧠 Contexto y Análisis Avanzado")
-    contexto_usuario = st.text_area("Proporciona el contexto de la campaña (Ej: Objetivos no medibles, público objetivo, tono):", placeholder="Escribe aquí el contexto para que JARVIS evalúe los resultados bajo esta lupa...")
+    # -------------------------------------
+    # SECCIÓN 1: PROCESAMIENTO DE OPINIÓN
+    # -------------------------------------
+    st.markdown("#### 🧠 Análisis de Eficiencia Cualitativa (Encuestas)")
+    contexto_usuario = st.text_area("Proporciona el contexto de la campaña (Ej: Público objetivo, tono, intenciones ocultas):", placeholder="Escribe aquí el contexto para que JARVIS evalúe los resultados bajo esta lupa...")
     
     if st.button("🌐 Iniciar Lectura Guiada (API)"):
         st.warning("⚠️ Al ser un ejercicio académico, el API para lectura guiada con contexto no se encuentra disponible en esta versión.")
         
-    st.markdown("---")
-    st.markdown("#### 📊 Cálculo Estándar de Eficiencias")
     if st.session_state.df_datos is None: 
-        st.warning("⚠️ Sube y valida un archivo correctamente en la Pestaña 3 para proceder.")
+        st.info("💡 Sube un archivo de Encuestas válido en la Pestaña 3 para poder realizar el cálculo.")
     else:
         if st.button("🚀 INICIAR CÁLCULO ALGORÍTMICO", type="primary"):
             st.session_state.analisis_completado = True
-            st.success("✅ **Cálculo completado. El Termómetro General (izquierda) ha sido actualizado con datos reales.**")
+            st.success("✅ **Cálculo completado. El Termómetro General (barra izquierda) ha sido actualizado con tus datos.**")
 
-# --- FIN MODIFICADO ---
-
-with tab5:
-    st.markdown("### 📱 Central de Monitoreo: Redes Sociales")
-    st.write("Sube aquí los reportes extraídos de Meta Business, Instagram Insights o TikTok Analytics.")
+    st.markdown("---")
     
-    st.download_button("📲 Descargar Plantilla CSV (Redes Sociales)", data=generar_plantilla_rrss(), file_name="plantilla_rrss.csv", mime="text/csv")
+    # -------------------------------------
+    # SECCIÓN 2: RESULTADOS DE REDES SOCIALES
+    # -------------------------------------
+    st.markdown("#### 📱 Gráficas y Reportes (Redes Sociales)")
     
-    archivo_rrss = st.file_uploader("Cargar reporte de Redes Sociales (CSV/Excel)", type=["csv", "xlsx"], key="rrss")
-    
-    if archivo_rrss is not None:
-        try:
-            df_rs = pd.read_csv(archivo_rrss) if archivo_rrss.name.endswith('.csv') else pd.read_excel(archivo_rrss)
-            st.session_state.df_rrss = df_rs
-            st.success(f"✅ Datos de RRSS cargados. ({len(df_rs)} publicaciones encontradas).")
-        except Exception as e:
-            st.error(f"Error procesando redes sociales: {e}")
-            
     if st.session_state.df_rrss is not None:
-        st.markdown("---")
-        st.markdown("#### 📊 Gráficas de Rendimiento")
-        
         df_rs = st.session_state.df_rrss
-        colA, colB = st.columns(2)
+        colG1, colG2 = st.columns(2)
         
-        with colA:
+        with colG1:
             st.write("**Alcance por Plataforma**")
             if 'plataforma' in df_rs.columns and 'alcance' in df_rs.columns:
                 alcance_plat = df_rs.groupby('plataforma')['alcance'].sum()
                 st.bar_chart(alcance_plat)
-            else: st.warning("Faltan columnas 'plataforma' o 'alcance'.")
+            else: st.warning("Tu archivo no tiene las columnas 'plataforma' o 'alcance'.")
             
-        with colB:
+        with colG2:
             st.write("**Evolución de Interacciones (Likes)**")
             if 'fecha' in df_rs.columns and 'likes' in df_rs.columns:
                 likes_fecha = df_rs.groupby('fecha')['likes'].sum()
                 st.line_chart(likes_fecha)
-            else: st.warning("Faltan columnas 'fecha' o 'likes'.")
+            else: st.warning("Tu archivo no tiene las columnas 'fecha' o 'likes'.")
             
-        st.markdown("---")
-        st.markdown("#### 📑 Generación de Informe Ejecutivo")
-        st.info("Presiona el botón para empaquetar estos resultados en un documento formal PDF.")
+        st.info("Puedes descargar un documento formal en PDF con estos resultados de las redes sociales:")
         
         try:
             pdf_bytes = generar_pdf_rrss(df_rs)
@@ -298,4 +315,7 @@ with tab5:
                 type="primary"
             )
         except Exception as e:
-            st.error(f"Error generando el PDF: Asegúrate de que las columnas coincidan con la plantilla. Detalle: {e}")
+            st.error(f"Hubo un error al generar el PDF. Detalle técnico: {e}")
+            
+    else:
+        st.info("💡 Sube un archivo de Redes Sociales en la Pestaña 3 para generar y visualizar tus gráficas aquí.")
